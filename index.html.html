@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vòng quay may mắn</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #4e54c8, #8f94fb);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      width: 320px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    button {
+      background: #4e54c8;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #3b40a0;
+    }
+
+    .wheel {
+      margin: 20px auto;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 10px solid #4e54c8;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wheel .segment {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      transform-origin: 100% 100%;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .pointer {
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 20px solid red;
+      position: absolute;
+      top: -20px;
+      left: calc(50% - 15px);
+    }
+
+    .result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: green;
+      font-weight: bold;
+    }
+
+    .history {
+      margin-top: 15px;
+      text-align: left;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 14px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="box" id="registerBox">
+    <h2>Đăng ký</h2>
+    <input type="text" id="regUser" placeholder="Tên người dùng" />
+    <input type="password" id="regPass" placeholder="Mật khẩu" />
+    <button onclick="register()">Đăng ký</button>
+    <p style="margin-top:10px;">Đã có tài khoản? <a href="#" onclick="showLogin()">Đăng nhập</a></p>
+  </div>
+
+  <div class="box" id="loginBox" style="display:none;">
+    <h2>Đăng nhập</h2>
+    <input type="text" id="username" placeholder="Tên người dùng" />
+    <input type="password" id="password" placeholder="Mật khẩu" />
+    <button onclick="login()">Đăng nhập</button>
+    <p style="margin-top:10px;">Chưa có tài khoản? <a href="#" onclick="showRegister()">Đăng ký</a></p>
+  </div>
+
+  <div class="box" id="wheelBox" style="display: none;">
+    <h2>Vòng quay may mắn</h2>
+    <div class="pointer"></div>
+    <div class="wheel" id="wheel"></div>
+    <button onclick="spin()">Quay</button>
+    <div class="result" id="result"></div>
+    <div class="history" id="history"></div>
+    <button onclick="logout()" style="margin-top:10px; background:#e74c3c;">Đăng xuất</button>
+  </div>
+
+  <script>
+    const rewards = ["Thẻ 10k", "Không trúng", "Thẻ 50k", "Thêm lượt", "iPhone", "Thẻ 100k"];
+    let currentUser = null;
+
+    // Khởi tạo vòng quay
+    function createWheel() {
+      const wheel = document.getElementById('wheel');
+      wheel.innerHTML = '';
+      rewards.forEach((r, i) => {
+        const seg = document.createElement('div');
+        seg.className = 'segment';
+        seg.style.transform = `rotate(${i * (360 / rewards.length)}deg) skewY(-60deg)`;
+        seg.style.background = i % 2 === 0 ? "#4e54c8" : "#8f94fb";
+        seg.innerText = r;
+        wheel.appendChild(seg);
+      });
+    }
+    createWheel();
+
+    // Chuyển giữa đăng ký & đăng nhập
+    function showRegister() {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('registerBox').style.display = 'block';
+    }
+    function showLogin() {
+      document.getElementById('registerBox').style.display = 'none';
+      document.getElementById('loginBox').style.display = 'block';
+    }
+
+    // Đăng ký
+    function register() {
+      const user = document.getElementById('regUser').value.trim();
+      const pass = document.getElementById('regPass').value;
+      if (!user || !pass) return alert('Vui lòng nhập đầy đủ.');
+      let users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (users[user]) return alert('Tên người dùng đã tồn tại!');
+      users[user] = pass;
+      localStorage.setItem('users', JSON.stringify(users));
+      alert('Đăng ký thành công!');
+      showLogin();
+    }
+
+    // Đăng nhập
+    function login() {
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value;
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (users[user] !== pass) return alert('Sai tài khoản hoặc mật khẩu!');
+      currentUser = user;
+      initHistory();
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('wheelBox').style.display = 'block';
+    }
+
+    // Quay vòng
+    let spinning = false;
+    function spin() {
+      if (spinning) return;
+      spinning = true;
+      document.getElementById('result').textContent = '';
+      const deg = 3600 + Math.floor(Math.random() * 360);
+      const wheelEl = document.getElementById('wheel');
+      wheelEl.style.transition = 'transform 5s ease-out';
+      wheelEl.style.transform = `rotate(${deg}deg)`;
+      setTimeout(() => {
+        const actual = deg % 360;
+        const idx = Math.floor((360 - actual) / (360 / rewards.length)) % rewards.length;
+        const reward = rewards[idx];
+        document.getElementById('result').textContent = `🎉 Bạn nhận được: ${reward}`;
+        saveHistory(reward);
+        loadHistory();
+        spinning = false;
+      }, 5000);
+    }
+
+    // Lưu lịch sử vào localStorage
+    function saveHistory(reward) {
+      const key = `history_${currentUser}`;
+      const hist = JSON.parse(localStorage.getItem(key) || '[]');
+      hist.unshift(`${new Date().toLocaleString()}: ${reward}`);
+      localStorage.setItem(key, JSON.stringify(hist.slice(0, 20)));
+    }
+
+    // Nạp và hiển thị lịch sử
+    function loadHistory() {
+      const key = `history_${currentUser}`;
+      const hist = JSON.parse(localStorage.getItem(key) || '[]');
+      const div = document.getElementById('history');
+      div.innerHTML = '<strong>Lịch sử quay:</strong><br>' + hist.join('<br>');
+    }
+    function initHistory() { loadHistory(); }
+
+    // Đăng xuất
+    function logout() {
+      currentUser = null;
+      document.getElementById('wheelBox').style.display = 'none';
+      showLogin();
+    }
+  </script>
+
+</body>
+</html>
